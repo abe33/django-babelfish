@@ -6,9 +6,12 @@ from django.conf import settings
 from babelfish.models import *
 
 class BabelFishAdmin( admin.ModelAdmin ):
+    """I setup the admin medias required by the javascript enhancer.
+    
+    Extend me to create your own admin class for your translatable models.
+    """
     def __init__(self, *args, **kwargs):
         super( BabelFishAdmin, self ).__init__( *args, **kwargs )
-        self.fieldsets += (( _(u'BabelFish'),  {'fields': ['bf_translations',] }),)
         
     class Media:
         css = {"all": ("%scss/babelfish.css" % settings.MEDIA_URL,)}
@@ -20,6 +23,7 @@ class BabelFishAdmin( admin.ModelAdmin ):
 class BabelFishDemoModelAdmin( BabelFishAdmin ):
     list_display=("name","slug",)
     fieldsets = [
+        ( _(u'BabelFish'),  {'fields': ['bf_translations',] }),
         ( _(u'Content'),       {'fields': ['name','slug','description'] }),
     ]
     class Media:

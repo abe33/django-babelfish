@@ -3,6 +3,10 @@
     border:1px solid #999999;
     margin-left:4px;
 }
+.babelfish-language.empty {
+    color:#cccccc;
+    border:1px solid #cccccc;
+}
 .babelfish-language.selected {
     background:#6699ff;
     color: white;

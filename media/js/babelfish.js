@@ -11,11 +11,26 @@ $(document).ready(function() {
         }
         
         initTabs();
+        initTable();
     }
-    catch(e)
-    {
-    }
+    catch(e) {}
 });
+function initTable()
+{
+    for( var i in languages )
+    {
+        var lang = languages[i][0];
+        console.log(lang);
+        var cell = $("#id_stat_"+lang);
+        var stat = 0;
+        if( translations[lang] )
+        {
+            for ( var j in translations[lang])
+                stat++;
+        }
+        cell.text( Math.floor( stat / fields.length * 100 )+ "%" );
+    }
+}
 function initTabs()
 {
     $(".babelfish-language").click(function(){
@@ -58,13 +73,15 @@ function setupFieldForLanguages( field, languages )
         
         if( translations[lang] && translations[lang][field] )
             value = translations[lang][field];
-            
+        /*  
         var nodeName = f[0].nodeName.toLowerCase();
+        
         if( nodeName == "input" )
             f.attr("value",value);
         else if( nodeName == "textarea" )
             f.text(value);
-        
+        */
+        f.val( value );
         fields.push( f );
     }
     var tab = getTabForFields( fields, [['default','Default']].concat( languages ) );
@@ -89,7 +106,7 @@ function getTabForFields ( fields, languages )
         var id = field.attr("id");
         
         var li = $("<li class='babelfish-widget' id='li_" + id + "'> (" + langName + ")</li>");
-        var a = $("<a href='#' class='babelfish-language "+ lang +"' rel='li_" + id + "'>" + lang + "</a>")
+        var a = $("<a href='#' class='babelfish-language "+ lang +" " + ( field.val() != "" ? "" : "empty" ) + "' rel='li_" + id + "'>" + lang + "</a>")
         
         li.prepend( field );
         languages_bar.append( a );

@@ -10,30 +10,55 @@ from django.utils.safestring import mark_safe
 from django import forms
 
 class BabelFishWidget( Widget ):  
-    """I'm an hidden field which a script node that contains
-    data for the javascript enhancer.'""" 
+    """I display the translations statistiques for an instance
+    in a table and create the script node that contains datas
+    for the javascript enhancer.'""" 
     translate_fields = ()
  
-    def __init__(self):
-        super(BabelFishWidget,self).__init__()
+    def __init__(self, *args, **kwargs ):
+        super(BabelFishWidget,self).__init__(*args, **kwargs)
         
     def render(self, name, value, attrs=None):
-        return mark_safe(u'''<script text="text/javascript">
-                                translations = %s
+        return mark_safe(u'''%s
+                            <script text="text/javascript">
+                                translations = %s;
                                 languages = %s;
                                 fields = %s;
                             </script>
-                          ''' % ( 
-                                  simplejson.dumps(value) if value is not None else "",
+                          ''' % ( self.get_table(),
+                                  simplejson.dumps(value) if value is not None else "null",
                                   simplejson.dumps( settings.LANGUAGES ),
                                   simplejson.dumps( self.translate_fields ) ) )
     
+    def get_table(self):
+        """I return the HTML code for the status table display instead of the classic widget."""
+        
+        th = "".join([ "<th>%s</th>" % o[0] for o in settings.LANGUAGES])
+        td = "".join([ "<td id='id_stat_%s'>%s</td>" % ( o[0], o[0] ) for o in settings.LANGUAGES])
+                
+        s = """<table>
+                    <tr>%s</tr>
+                    <tr>%s</tr>
+               </table>""" % (th, td)
+        
+        return s
+        
     def value_from_datadict(self, data, files, name):
+        """I loop through all translatable fields for each lang
+        and prepare the returned dict.
+        
+        When a field value is an empty string, the translations 
+        slot is not filled. Then, if all of the translations slots
+        are empty, I return None instead of a dict. This way the
+        translations dictionary is always as small as possible, and
+        it force the use of the defaults for not translated field instead
+        of returning an empty string. 
+        """
         translations = {}
         langs = [ o[0] for o in settings.LANGUAGES ]
         fields = self.translate_fields
         has_translations = False
-        
+       
         for lang in langs : 
             for field in fields : 
                 field_name = "%s_%s" % ( field, lang )
@@ -53,15 +78,10 @@ class BabelFishWidget( Widget ):
             return None
 
 class BabelFishFormField ( forms.CharField ):
-
+    """I currently only setup the widget."""
     widget = BabelFishWidget()
     
-    def __init__ (self, *args, **kwargs):
-        for k in kwargs :
-            self.__dict__[k]=kwargs[k]
-        super( BabelFishFormField, self ).__init__()
-    
-    def clean ( self, value ):
+    def clean( self, value ):
         return value
 
 class BabelFishField ( models.Field ):
@@ -111,10 +131,11 @@ class BabelFishModel( models.Model ):
     """
     bf_current_lang = None
     bf_safe_defaults = {}
-    bf_translations = BabelFishField(_(u"Translations"), 
+    bf_translations = BabelFishField(_(u"BabelFish Status"), 
                                         null=True,
                                         blank=True,
-                                        help_text=_(u"Contains serialized translations for each language") )
+                                        help_text=_(u"Reminder : An empty translation will be ignored, and "
+                                                    u"the default will be used instead.") )
     
     translate_fields = ()  
     
@@ -128,8 +149,6 @@ class BabelFishModel( models.Model ):
         self._meta.get_field('bf_translations').translate_fields = self.translate_fields
      
     def __getattr__(self, name):
-        "I allow to access translatable properties with the lang suffix."
-        
         try:
             super(BabelFishModel, self).__getattr__(name)
         except:
@@ -139,7 +158,6 @@ class BabelFishModel( models.Model ):
                 raise
     
     def __setattr__(self, name, value ):
-        "I allow to set translatable properties with the lang suffix."
         if self.is_query_property_name( name ):
             return self.set_query_property_value( name, value )
         else:
@@ -147,6 +165,9 @@ class BabelFishModel( models.Model ):
             # calling _set_property for translatable fields when current lang is not None
             if name in self.translate_fields and self.bf_current_lang is not None : 
                 self._set_property( name, self.bf_current_lang, value )
+            # saving default data in the safe defaults dict
+            elif name in self.translate_fields :
+                self.bf_safe_defaults[ name ] = value
     
     def is_query_property_name( self, name ):
         "I verify that the property name query is valid."
@@ -225,10 +246,14 @@ class BabelFishModel( models.Model ):
         return self.bf_translations[lang][name]
     
     def translate( self, lang = None ):
-        """I swap the language for this instance.
+        """I swap the language for this instance. 
         
-        All translatable properties values are replaced by those of the
-        selected language."""
+        Once done, the instance is considered as translated and
+        all translatable properties values are replaced by those
+        of the selected language.
+        
+        Call me without any arguments to reset the instance
+        with the defaults."""
         if lang == self.bf_current_lang :
             return
 
@@ -240,6 +265,13 @@ class BabelFishModel( models.Model ):
         else:
             for k in self.translate_fields :
                 self.__dict__[ k ] = self._get_property( k, self.bf_current_lang )
+    
+    def save (self):
+        # we make sure that we save a not translated instance 
+        if self.bf_current_lang is not None :
+            self.translate()
+        
+        super( BabelFishModel, self ).save()
 
 
 class BabelFishDemoModel ( BabelFishModel ):
