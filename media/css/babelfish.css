@@ -1,0 +1,12 @@
+.babelfish-language {
+    padding:3px;
+    border:1px solid #999999;
+    margin-left:4px;
+}
+.babelfish-language.selected {
+    background:#6699ff;
+    color: white;
+}
+.babelfish-widget {
+    list-style:none;
+}
