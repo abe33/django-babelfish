@@ -12,8 +12,12 @@ $(document).ready(function() {
         
         initTabs();
         initTable();
+        
+        
     }
-    catch(e) {}
+    catch(e) {
+        console.error(e);
+    }
 });
 function initTable()
 {
@@ -23,7 +27,7 @@ function initTable()
         console.log(lang);
         var cell = $("#id_stat_"+lang);
         var stat = 0;
-        if( translations[lang] )
+        if( translations && translations[lang] )
         {
             for ( var j in translations[lang])
                 stat++;
@@ -71,7 +75,7 @@ function setupFieldForLanguages( field, languages )
         
         var value = "";
         
-        if( translations[lang] && translations[lang][field] )
+        if( translations && translations[lang] && translations[lang][field] )
             value = translations[lang][field];
         /*  
         var nodeName = f[0].nodeName.toLowerCase();

@@ -13,7 +13,6 @@ class BabelFishWidget( Widget ):
     """I display the translations statistiques for an instance
     in a table and create the script node that contains datas
     for the javascript enhancer.'""" 
-    translate_fields = ()
  
     def __init__(self, *args, **kwargs ):
         super(BabelFishWidget,self).__init__(*args, **kwargs)
@@ -25,21 +24,21 @@ class BabelFishWidget( Widget ):
                                 languages = %s;
                                 fields = %s;
                             </script>
-                          ''' % ( self.get_table(),
+                          ''' % ( self.get_table(attrs),
                                   simplejson.dumps(value) if value is not None else "null",
                                   simplejson.dumps( settings.LANGUAGES ),
                                   simplejson.dumps( self.translate_fields ) ) )
     
-    def get_table(self):
+    def get_table(self, attrs):
         """I return the HTML code for the status table display instead of the classic widget."""
         
         th = "".join([ "<th>%s</th>" % o[0] for o in settings.LANGUAGES])
         td = "".join([ "<td id='id_stat_%s'>%s</td>" % ( o[0], o[0] ) for o in settings.LANGUAGES])
                 
-        s = """<table>
+        s = """<table id='%s'>
                     <tr>%s</tr>
                     <tr>%s</tr>
-               </table>""" % (th, td)
+               </table>""" % ( attrs["id"] ,th, td)
         
         return s
         
@@ -80,11 +79,11 @@ class BabelFishWidget( Widget ):
 class BabelFishFormField ( forms.CharField ):
     """I currently only setup the widget."""
     widget = BabelFishWidget()
-    
+        
     def clean( self, value ):
         return value
 
-class BabelFishField ( models.Field ):
+class BabelFishField ( models.fields.Field ):
     """I store the translations data for all languages and all translatable fields.
     
     I also store in a property the translatable fields names and pass it to the form field widget.
@@ -92,10 +91,17 @@ class BabelFishField ( models.Field ):
     __metaclass__ = models.SubfieldBase
     
     description = "A JSON dict which hold all the translations"
-    translate_fields = ()
+    
+    def __init__ (self, translate_fields=None, *args, **kwargs ):
+        self.translate_fields = translate_fields
+        
+        kwargs["null"]=True
+        kwargs["blank"]=True
+        
+        super( BabelFishField, self ).__init__( *args, **kwargs)
     
     def get_internal_type(self):
-        return 'CharField'
+        return 'TextField'
     
     def formfield(self, **kwargs):
         kwargs["form_class"] = BabelFishFormField
@@ -131,20 +137,12 @@ class BabelFishModel( models.Model ):
     """
     bf_current_lang = None
     bf_safe_defaults = {}
-    bf_translations = BabelFishField(_(u"BabelFish Status"), 
-                                        null=True,
-                                        blank=True,
-                                        help_text=_(u"Reminder : An empty translation will be ignored, and "
-                                                    u"the default will be used instead.") )
-    
-    translate_fields = ()  
     
     def __init__(self, *args, **kwargs):
         super( BabelFishModel, self ).__init__(*args, **kwargs)
-        
+
         for k in self.translate_fields : 
             self.bf_safe_defaults[ k ] = self.__dict__[ k ]
-            
         # need to pass the translatable fields to the bf_translations fields to setup the widget
         self._meta.get_field('bf_translations').translate_fields = self.translate_fields
      
@@ -277,6 +275,10 @@ class BabelFishModel( models.Model ):
 class BabelFishDemoModel ( BabelFishModel ):
     "A simple demo class with an admin and translatable and not-translatable fields"
     translate_fields = ('name','description')
+    bf_translations = BabelFishField(   translate_fields,
+                                        _(u"BabelFish Status"), 
+                                        help_text=_(u"Reminder : An empty translation will be ignored, and "
+                                                    u"the default will be used instead.") )
     
     name = models.CharField( "Name", max_length=50, null=True, blank=True )
     slug = models.CharField( "Slug", max_length=50, null=True, blank=True )
