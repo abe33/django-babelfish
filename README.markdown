@@ -4,13 +4,11 @@ django-babelfish
 
 Warning : As it is, django-babelfish should be considered as a developpment version.
 
--------
-
 Installation
 ------------
 Download the sources and made it available within your `python path`.
 
-Copy, or symlink, the files in `medias` in your own media directory.
+Copy, or symlink, the files in `media` in your own media directory.
 Theses files are used in the admin to build and style the translations fields
 in the admin forms.
 
@@ -123,10 +121,11 @@ As you can notice, I explicitely add the `bf_translations` to the fieldsets. It
 will allow the `BabelFishWidget` to be rendered and the setup script will have the
 required setup.
 
-
 Actually, the `BabelFishWidget` display, instead of the `TextField` widget, a table
 with statistics for translations in the current instance. 
 
 The widgets to edit translations are cloned by the `babelfish.js` script from the
 original widget of each translatable fields. 
+
+![BabelFishDemoModelAdmin](https://github.com/abe33/django-babelfish/raw/master/admin.png "What you should obtain in the admin")
 
