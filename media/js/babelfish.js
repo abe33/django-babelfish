@@ -38,7 +38,9 @@ function initTable()
 function initTabs()
 {
     $(".babelfish-language").click(function(){
-        select( 0, this );      
+        select( 0, this ); 
+        console.log ( this );
+        return false;    
     });
     
     $(".babelfish-language.default").each( select );
@@ -110,7 +112,7 @@ function getTabForFields ( fields, languages )
         var id = field.attr("id");
         
         var li = $("<li class='babelfish-widget' id='li_" + id + "'> (" + langName + ")</li>");
-        var a = $("<a href='#' class='babelfish-language "+ lang +" " + ( field.val() != "" ? "" : "empty" ) + "' rel='li_" + id + "'>" + lang + "</a>")
+        var a = $("<a href='' class='babelfish-language "+ lang +" " + ( field.val() != "" ? "" : "empty" ) + "' rel='li_" + id + "'>" + lang + "</a>")
         
         li.prepend( field );
         languages_bar.append( a );

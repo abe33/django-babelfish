@@ -8,6 +8,9 @@ from django.utils import simplejson
 from django.conf import settings
 from django.utils.safestring import mark_safe
 from django import forms
+from django.utils import translation
+from babelfish import settings as babelfish_settings
+models.options.DEFAULT_NAMES += ('auto_translate',) 
 
 class BabelFishWidget( Widget ):  
     """I display the translations statistiques for an instance
@@ -108,7 +111,7 @@ class BabelFishField ( models.fields.Field ):
         f = super(BabelFishField, self).formfield(**kwargs)
         f.widget.translate_fields = self.translate_fields
         return f
-    
+        
     def to_python(self, value):
         if value is None or value == "":
             return None
@@ -123,7 +126,12 @@ class BabelFishField ( models.fields.Field ):
         if value is None : 
             return "" 
         else:
-            return simplejson.dumps( value )   
+            return simplejson.dumps( value ) 
+    
+    def value_to_string(self, obj):
+        value = self._get_val_from_obj(obj)
+        return self.get_prep_value(value)
+
 
 class BabelFishModel( models.Model ):
     """I provide the stuff needed to convert a Model into
@@ -136,16 +144,21 @@ class BabelFishModel( models.Model ):
     which translations are allowed.
     """
     bf_current_lang = None
-    bf_safe_defaults = {}
+    bf_safe_defaults = None
     
     def __init__(self, *args, **kwargs):
+        self.bf_safe_defaults = {}
+    
         super( BabelFishModel, self ).__init__(*args, **kwargs)
 
         for k in self.translate_fields : 
             self.bf_safe_defaults[ k ] = self.__dict__[ k ]
         # need to pass the translatable fields to the bf_translations fields to setup the widget
         self._meta.get_field('bf_translations').translate_fields = self.translate_fields
-     
+        
+        if self._meta.auto_translate and babelfish_settings.ALLOW_AUTO_TRANSLATE : 
+            self.translate( translation.get_language() )
+                
     def __getattr__(self, name):
         try:
             super(BabelFishModel, self).__getattr__(name)
@@ -156,16 +169,22 @@ class BabelFishModel( models.Model ):
                 raise
     
     def __setattr__(self, name, value ):
-        if self.is_query_property_name( name ):
+        # short circuit for the default dict
+        if name == "bf_safe_defaults":
+            super(BabelFishModel, self).__setattr__(name,value)
+        elif self.is_query_property_name( name ):
             return self.set_query_property_value( name, value )
         else:
-            super(BabelFishModel, self).__setattr__(name,value)
-            # calling _set_property for translatable fields when current lang is not None
-            if name in self.translate_fields and self.bf_current_lang is not None : 
-                self._set_property( name, self.bf_current_lang, value )
-            # saving default data in the safe defaults dict
-            elif name in self.translate_fields :
-                self.bf_safe_defaults[ name ] = value
+            try:
+                super(BabelFishModel, self).__setattr__(name,value)
+                # calling _set_property for translatable fields when current lang is not None
+                if name in self.translate_fields and self.bf_current_lang is not None : 
+                    self._set_property( name, self.bf_current_lang, value )
+                # saving default data in the safe defaults dict
+                elif name in self.translate_fields :
+                    self.bf_safe_defaults[ name ] = value
+            except:
+                raise
     
     def is_query_property_name( self, name ):
         "I verify that the property name query is valid."
@@ -212,7 +231,7 @@ class BabelFishModel( models.Model ):
             elif name in self.bf_safe_defaults :
                 return self.bf_safe_defaults[ name ]
             else:
-                raise
+                raise 
     
         elif name in self.bf_safe_defaults :
             return self.bf_safe_defaults[ name ]
@@ -257,12 +276,20 @@ class BabelFishModel( models.Model ):
 
         self.bf_current_lang = lang
         
+#        map = self._meta.__dict__["_name_map"]
+#        for k in map:
+#            if isinstance (getattr(self, k ), BabelFishModel):
+#                getattr(self, k ).translate( lang )
+        
         if self.bf_current_lang is None :
             for k in self.translate_fields :
-                self.__dict__[ k ] = self.bf_safe_defaults[ k ] 
+#                self.__dict__[ k ] = self.bf_safe_defaults[ k ] 
+                setattr( self, k, self.bf_safe_defaults[ k ] )
         else:
             for k in self.translate_fields :
-                self.__dict__[ k ] = self._get_property( k, self.bf_current_lang )
+#                self.__dict__[ k ] = self._get_property( k, self.bf_current_lang )
+                setattr( self, k, self._get_property( k, self.bf_current_lang ) )
+        
     
     def save (self):
         # we make sure that we save a not translated instance 
@@ -270,6 +297,9 @@ class BabelFishModel( models.Model ):
             self.translate()
         
         super( BabelFishModel, self ).save()
+    
+    class Meta :
+        abstract = True
 
 
 class BabelFishDemoModel ( BabelFishModel ):
@@ -283,6 +313,9 @@ class BabelFishDemoModel ( BabelFishModel ):
     name = models.CharField( "Name", max_length=50, null=True, blank=True )
     slug = models.CharField( "Slug", max_length=50, null=True, blank=True )
     description = models.TextField( "Description", null=True, blank=True )
+
+    class Meta:
+        auto_translate=False
     
     
     

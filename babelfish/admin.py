@@ -12,12 +12,24 @@ class BabelFishAdmin( admin.ModelAdmin ):
     """
     def __init__(self, *args, **kwargs):
         super( BabelFishAdmin, self ).__init__( *args, **kwargs )
-        
+    
+    # FIXME: auto translate conflict with admin
+#    def get_object(self, request, object_id):
+#        o = super( BabelFishAdmin, self ).get_object( request, object_id )
+#        o.translate()
+#        return o 
+#    
+#    def save_model(self, request, obj, form, change):
+#        """
+#        Given a model instance save it to the database.
+#        """
+#        obj.save()
+    
     class Media:
         css = {"all": ("%scss/babelfish.css" % settings.MEDIA_URL,)}
         js = (
-                    "%sjs/jquery-1.4.2.min.js" % settings.MEDIA_URL,
-                    "%sjs/babelfish.js" % settings.MEDIA_URL,
+                "%sjs/jquery-1.4.2.min.js" % settings.MEDIA_URL,
+                "%sjs/babelfish.js" % settings.MEDIA_URL,
              )
 
 class BabelFishDemoModelAdmin( BabelFishAdmin ):
@@ -26,12 +38,5 @@ class BabelFishDemoModelAdmin( BabelFishAdmin ):
         ( _(u'BabelFish'),  {'fields': ['bf_translations',] }),
         ( _(u'Content'),       {'fields': ['name','slug','description'] }),
     ]
-    class Media:
-        css = {"all": ("%scss/admin_enhancements.css" % settings.MEDIA_URL,)}
-        js = (
-                    "%sjs/jquery-1.4.2.min.js" % settings.MEDIA_URL,
-                    "%sjs/ckeditor/ckeditor.js" % settings.MEDIA_URL,
-                    "%sjs/admin_enhancements.js" % settings.MEDIA_URL,
-                )
 
 admin.site.register( BabelFishDemoModel, BabelFishDemoModelAdmin )

@@ -102,6 +102,34 @@ API
     >>> m.name_it # will raise an error if the it language is not defined in LANGUAGES
     >>> m.slug_fr # will raise an since slug is not translatable
 
+Automatic model translation
+---------------------------
+`BabelFishModel` support a custom `Meta` argument `auto_translate` which enable models to be automatically 
+translated when instanciated. However, models instance use in the the admin site should never be translated (see below).
+
+Middlewares
+-----------
+
+Django BabelFish provides several middlewares with different behaviors. 
+
+* `UserAgentLangMiddleware` simply define the `django.utils.translation` language
+   on the language provided by the user's browser lang meta.
+* `DefaultLangMiddleware` implements a more flexible behavior, if there's no language
+   specified in the current user's session the language is set with the user agent meta and stored in the session.
+   If the request carry a `GET` parameter named `lang` the language is set on this parameter, the session is updated
+   as well. In the other cases, the value in session is used.
+
+All theses middlewares support automatic models translation, and prevent models to be translated in the admin.
+
+Models should never translated in the admin to avoid issues with models saving, since the automatic translation is done
+in the `__init__`. The fact that a model is automatically translated at init will produce that admin's forms will not set the default
+as wanted but the translations for the current language (see API). In consequences, all middlewares exclude admin pages from automatic translations.
+
+To achieve that feature, the middlewares checks wether the current `PATH_INFO` match the pattern defined in `ADMIN_URLS_PATTERN` (`"^/admin/"` by default) and activate the `ALLOW_AUTO_TRANSLATE` settings accordingly. You can set the `ADMIN_URLS_PATTERN` in your project's `settings.py`. 
+
+Models are automatically translated only if both their `auto_translate` meta is set to `True` and if the `ALLOW_AUTO_TRANSLATE`
+is also `True`.
+
 Admin integration
 -----------------
 
