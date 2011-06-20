@@ -38,7 +38,7 @@ I'll describe the setup below.
     class MyTranslatableModel ( BabelFishModel ):
     
         translate_fields = ('name','description')
-        bf_translations = BabelFishField( translate_fields, "BabelFish Translations" )
+        bf_translations = BabelFishField( translate_fields )
         
         name = models.CharField( "Name", max_length=100 )
         slug = models.CharField( "Slug", max_length=100 )

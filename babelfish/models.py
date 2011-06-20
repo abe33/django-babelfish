@@ -10,7 +10,8 @@ from django.utils.safestring import mark_safe
 from django import forms
 from django.utils import translation
 from babelfish import settings as babelfish_settings
-models.options.DEFAULT_NAMES += ('auto_translate',) 
+
+models.options.DEFAULT_NAMES += ('auto_translate',)
 
 class BabelFishWidget( Widget ):  
     """I display the translations statistiques for an instance
@@ -100,6 +101,8 @@ class BabelFishField ( models.fields.Field ):
         
         kwargs["null"]=True
         kwargs["blank"]=True
+        kwargs["verbose_name"] = _(u"BabelFish Status")
+        kwargs["help_text"] = _(u"Reminder : An empty translation will be ignored, and the default will be used instead.")
         
         super( BabelFishField, self ).__init__( *args, **kwargs)
     
@@ -156,7 +159,7 @@ class BabelFishModel( models.Model ):
         # need to pass the translatable fields to the bf_translations fields to setup the widget
         self._meta.get_field('bf_translations').translate_fields = self.translate_fields
         
-        if self._meta.auto_translate and babelfish_settings.ALLOW_AUTO_TRANSLATE : 
+        if hasattr( self._meta, "auto_translate") and self._meta.auto_translate and babelfish_settings.ALLOW_AUTO_TRANSLATE : 
             self.translate( translation.get_language() )
                 
     def __getattr__(self, name):
@@ -301,14 +304,10 @@ class BabelFishModel( models.Model ):
     class Meta :
         abstract = True
 
-
 class BabelFishDemoModel ( BabelFishModel ):
     "A simple demo class with an admin and translatable and not-translatable fields"
     translate_fields = ('name','description')
-    bf_translations = BabelFishField(   translate_fields,
-                                        _(u"BabelFish Status"), 
-                                        help_text=_(u"Reminder : An empty translation will be ignored, and "
-                                                    u"the default will be used instead.") )
+    bf_translations = BabelFishField( translate_fields )
     
     name = models.CharField( "Name", max_length=50, null=True, blank=True )
     slug = models.CharField( "Slug", max_length=50, null=True, blank=True )
