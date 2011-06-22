@@ -68,7 +68,8 @@ function setupFieldForLanguages( field, languages )
     hfield.remove();
     
     var fields = [hfield];
-    for( var i in languages )
+    var l = languages.length;
+    for( var i=0; i<l;i++ )
     {
         var lang = languages[i][0];
         var f = hfield.clone();
@@ -103,7 +104,7 @@ function getTabForFields ( fields, languages )
     
     div.append( languages_bar );
     div.append( languages_widgets );
-    
+
     for( var i = 0; i<l; i++ )
     {
         var field = fields[i];

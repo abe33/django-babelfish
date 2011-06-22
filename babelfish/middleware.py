@@ -16,6 +16,7 @@ class UserAgentLangMiddleware():
         
         language = translation.get_language_from_request(request)
         translation.activate(language)
+        request.LANGUAGE_CODE = language
 
 class DefaultLangMiddleware():
 
@@ -37,3 +38,4 @@ class DefaultLangMiddleware():
             session["language"] = language
         
         translation.activate(language)
+        request.LANGUAGE_CODE = language

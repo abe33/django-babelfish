@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.utils.translation import ugettext as _
 from django.conf import settings
 
+from babelfish import settings as babelfish_settings
 from babelfish.models import *
 
 class BabelFishAdmin( admin.ModelAdmin ):
@@ -26,11 +27,8 @@ class BabelFishAdmin( admin.ModelAdmin ):
 #        obj.save()
     
     class Media:
-        css = {"all": ("%scss/babelfish.css" % settings.MEDIA_URL,)}
-        js = (
-                "%sjs/jquery-1.4.2.min.js" % settings.MEDIA_URL,
-                "%sjs/babelfish.js" % settings.MEDIA_URL,
-             )
+        css = {"all": babelfish_settings.BABELFISH_ADMIN_CSS }
+        js = babelfish_settings.BABELFISH_ADMIN_JS
 
 class BabelFishDemoModelAdmin( BabelFishAdmin ):
     list_display=("name","slug",)
